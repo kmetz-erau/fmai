@@ -4,7 +4,7 @@ An open-ended Oregon-Trail-style browser game that teaches practical AI habits f
 
 ## How to play
 
-You travel through a workday route. At each stop, you use the in-game FM AI Tool to write a prompt, receive an Ollama response, inspect it, and decide what to use. Each stop teaches one usable AI move—writing a clear prompt, finding missing information, comparing documents, preparing field questions, and setting a safe stop condition. You then type the move you would actually make and see the consequence for time, safety, crew trust, and AI skill. Starter buttons provide coaching prompts; they are not answer choices.
+You first choose a skilled-trade route: HVAC/BAS, Electrical, Plumbing, Carpentry/General Maintenance, or Grounds/Roads. The work calls and scenarios change with that choice. At each stop, you use the in-game FM AI Tool to write a prompt, receive an Ollama response, inspect it, and decide what to use. Each stop teaches one usable AI move—writing a clear prompt, finding missing information, comparing documents, preparing field questions, and setting a safe stop condition. You then type the move you would actually make and see the consequence for time, safety, crew trust, and AI skill. Starter buttons provide coaching prompts; they are not answer choices.
 
 ## Run locally
 
