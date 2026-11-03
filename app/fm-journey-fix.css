@@ -1,0 +1,15 @@
+/* Final brand cleanup: this file loads after the legacy stylesheet. */
+.tradePicker .pickerGraphic{display:none!important}
+.tradePicker .eyebrow{font-size:0!important}
+.tradePicker .eyebrow:after{content:'FM JOURNEY · CHOOSE YOUR ROUTE';font-size:11px}
+.tradeCard strong{font-size:0!important}
+.tradeCard strong:after{content:'Start journey →';font-size:11px}
+.trailHeader .eyebrow{font-size:0!important}
+.trailHeader .eyebrow:after{content:'FM JOURNEY · YOUR ROUTE';font-size:11px}
+.trailHeader h1{font-size:0!important}
+.trailHeader h1:after{content:'FM Journey';font:700 clamp(42px,6vw,72px) 'Space Grotesk';letter-spacing:-3px}
+.topmeta{font-size:0!important}
+.topmeta:after{content:'FM JOURNEY\A OPEN-ENDED AI GAME';white-space:pre;font-size:11px;line-height:1.5}
+.incoming p{white-space:pre-line}
+.incoming span{font-size:0}
+.incoming span:after{content:'WORK ORDER';font-size:10px}

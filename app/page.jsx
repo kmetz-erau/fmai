@@ -83,6 +83,22 @@ const tradeProfiles = {
   ]},
 };
 
+const workOrderStages = [
+  { priority: 'P2 · Response today', requester: 'Facilities dispatch', timing: 'Before the crew leaves', assignment: 'Prepare a short intake and field-preparation checklist. Do not diagnose or select a repair.' },
+  { priority: 'P2 · Occupied space', requester: 'Building occupant / area coordinator', timing: 'Before the next occupied period', assignment: 'Separate reported facts from guesses and prepare the next human checks.' },
+  { priority: 'P3 · Parts or vendor support', requester: 'Equipment operator / service desk', timing: 'Before a part is ordered or a vendor is scheduled', assignment: 'Identify missing information and prepare vendor questions. Do not name a replacement part.' },
+  { priority: 'P1 · Approval boundary', requester: 'Area supervisor', timing: 'Pause before anyone changes a setting or condition', assignment: 'Identify the stop condition and prepare questions for the qualified decision-maker.' },
+  { priority: 'P2 · Coordination risk', requester: 'Crew lead / scheduler', timing: 'Before the crew departs', assignment: 'Compare the supplied records, list mismatches, and prepare a crew briefing. Do not approve the plan.' },
+  { priority: 'P1 · Potential hazard', requester: 'Occupant / supervisor', timing: 'Immediately; protect people and the area first', assignment: 'Draft a safe escalation using verified facts. Do not authorize a reset, repair, or workaround.' },
+  { priority: 'P3 · Process improvement', requester: 'Trade supervisor', timing: 'End of workday', assignment: 'Turn the useful workflow into a reusable shop card with a human owner and stop condition.' },
+];
+
+function formatWorkOrder(profile, index, scenario) {
+  const stage = workOrderStages[index];
+  const number = `FM-${profile.name.replace(/[^A-Z]/gi, '').slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, '0')}`;
+  return `WO ${number}\nTRADE: ${profile.name}\nPRIORITY: ${stage.priority}\nSTATUS: OPEN · AI PREPARATION REQUESTED\nREQUESTER: ${stage.requester}\nTIMING: ${stage.timing}\n\nREQUEST DETAILS\n${scenario}\n\nAI ASSIGNMENT\n${stage.assignment}`;
+}
+
 function LegacyRouteGraphic({ profile }) {
   return <div className="routeGraphic" style={{ '--trade-color': profile.color }}><svg viewBox="0 0 620 220" role="img" aria-label={`${profile.name} route illustration`}><rect width="620" height="220" rx="18" fill="#082238" /><path d="M0 166 C120 112 190 190 300 135 S485 76 620 116" fill="none" stroke="#f2b134" strokeWidth="6" strokeDasharray="11 12" /><path d="M0 178 C120 124 190 202 300 147 S485 88 620 128" fill="none" stroke="#d9e8ef" strokeWidth="2" opacity=".4" /><circle cx="78" cy="137" r="15" fill="#f2b134" /><circle cx="284" cy="142" r="15" fill="#fff" /><circle cx="514" cy="103" r="15" fill="#fff" /><path d="M63 136h-27M93 136h27M78 122v-18" stroke="#f2b134" strokeWidth="4" strokeLinecap="round" /><path d="M270 142h-25M299 142h25M284 127v-22" stroke={profile.color} strokeWidth="4" strokeLinecap="round" /><path d="M500 103h-26M529 103h26M514 88V67" stroke="#3d8b58" strokeWidth="4" strokeLinecap="round" /><path d="M70 168h-7l-5 14h40l-5-14h-7M270 173h28v12h-28zM500 134l14-26 14 26z" fill="none" stroke="#d9e8ef" strokeWidth="3" /><text x="25" y="42" fill="#f2b134" fontFamily="Arial" fontSize="13" fontWeight="700" letterSpacing="2">THE SHIFT TRAIL</text><text x="25" y="66" fill="#fff" fontFamily="Arial" fontSize="25" fontWeight="700">{profile.name}</text><text x="25" y="91" fill="#bcd0dc" fontFamily="Arial" fontSize="13">Learn AI by making the calls.</text></svg><div className="routeGraphicBadge"><span>{profile.icon}</span><b>{profile.short}</b></div></div>;
 }
@@ -130,7 +146,7 @@ function FMJourney() {
   const [resources, setResources] = useState({ time: 100, safety: 100, trust: 60, skill: 0 });
   const [bestScore, setBestScore] = useState(null);
   const profile = tradeProfiles[selectedTrade || 'hvac'];
-  const activeStops = stops.map((base, index) => ({ ...base, trade: profile.name, scene: profile.scenes[index] }));
+  const activeStops = stops.map((base, index) => ({ ...base, trade: profile.name, scene: formatWorkOrder(profile, index, profile.scenes[index]) }));
   const stop = activeStops[stopIndex];
   const result = submitted ? scoreMove(stop, response, aiUsed) : null;
   const finished = stopIndex === stops.length - 1 && submitted;

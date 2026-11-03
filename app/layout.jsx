@@ -1,4 +1,5 @@
 import './globals.css';
+import './fm-journey-fix.css';
 
 export const metadata = {
   title: 'Facilities AI Field Lab',
