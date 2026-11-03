@@ -1,10 +1,10 @@
-# Facilities AI Field Lab: The Shift
+# Facilities AI Field Lab: The Shift Trail
 
-An open-ended browser game for practicing AI judgment in facilities and public-works situations.
+An open-ended Oregon-Trail-style browser game that teaches practical AI habits for facilities and public-works crews.
 
 ## How to play
 
-You receive a job call, read the situation, and type the move you would actually make. The game scores your response for practical action, verification, human ownership, and safety boundaries. There are no multiple-choice answers.
+You travel through a workday route. Each stop teaches one usable AI move—writing a clear prompt, finding missing information, comparing documents, preparing field questions, and setting a safe stop condition. You type what you would actually do, then see the consequence for time, safety, crew trust, and AI skill. Starter buttons provide coaching prompts; they are not answer choices.
 
 ## Run locally
 
@@ -27,4 +27,4 @@ Use these Vercel settings:
 - Output Directory: `.next`
 - Root Directory: the folder containing `package.json`
 
-The game runs without an AI connection. Ollama can be added later for optional free-form coaching after a move.
+The game runs without an AI connection so it can be deployed reliably as a static-style Next.js game. The scoring is local and intentionally checks for practical habits rather than trade-specific technical knowledge.
