@@ -35,26 +35,31 @@ const starterPatterns = {
   'Set a crew rule': 'Write one plain-language crew rule for using AI at work and one example of when the rule says stop.',
 };
 
-function scoreMove(stop, response) {
+function scoreMove(stop, response, usedAI = false) {
   const text = response.toLowerCase();
   const helpful = ['check', 'verify', 'source', 'manual', 'sop', 'qualified', 'human', 'question', 'field', 'review', 'do not', 'unknown', 'missing', 'ai'];
   const dangerous = ['reset', 'replace', 'approve', 'definitely', 'always means', 'set the dose', 'energized', 'ignore'];
   const helpfulHits = helpful.filter((word) => text.includes(word)).length;
   const dangerousHits = dangerous.filter((word) => text.includes(word)).length;
   const action = /i would|first|next|send|ask|write|stop|notify|compare|use/.test(text);
-  const score = Math.max(0, Math.min(100, 30 + helpfulHits * 8 + (action ? 12 : 0) - dangerousHits * 17));
-  return { score, safe: dangerousHits === 0 || text.includes('do not'), helpfulHits, dangerousHits, summary: score >= 75 && dangerousHits === 0 ? 'The crew can work with this move.' : score >= 55 ? 'This move has a useful start, but it needs a clearer check.' : 'This move needs review before anyone acts.' };
+  const score = Math.max(0, Math.min(100, 30 + helpfulHits * 8 + (action ? 12 : 0) + (usedAI ? 8 : 0) - dangerousHits * 17));
+  return { score, safe: dangerousHits === 0 || text.includes('do not'), helpfulHits, dangerousHits, usedAI, summary: score >= 75 && dangerousHits === 0 ? 'The crew can work with this move.' : score >= 55 ? 'This move has a useful start, but it needs a clearer check.' : 'This move needs review before anyone acts.' };
 }
 
 function ShiftTrail() {
   const [stopIndex, setStopIndex] = useState(0);
   const [response, setResponse] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiUsed, setAiUsed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState([]);
   const [resources, setResources] = useState({ time: 100, safety: 100, trust: 60, skill: 0 });
   const [bestScore, setBestScore] = useState(null);
   const stop = stops[stopIndex];
-  const result = submitted ? scoreMove(stop, response) : null;
+  const result = submitted ? scoreMove(stop, response, aiUsed) : null;
   const finished = stopIndex === stops.length - 1 && submitted;
   const totalScore = results.reduce((sum, item) => sum + item.score, 0) + (result?.score || 0);
   const routePercent = Math.round((stopIndex / (stops.length - 1)) * 100);
@@ -65,7 +70,26 @@ function ShiftTrail() {
   }, []);
 
   function useStarter(label) {
-    setResponse((current) => current ? `${current}\n\n${starterPatterns[label]}` : starterPatterns[label]);
+    setAiPrompt((current) => current ? `${current}\n\n${starterPatterns[label]}` : starterPatterns[label]);
+  }
+
+  async function askTool(event) {
+    event.preventDefault();
+    if (!aiPrompt.trim() || aiLoading) return;
+    setAiLoading(true); setAiError('');
+    try {
+      const toolResponse = await fetch('/api/ollama', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: aiPrompt, scenario: `${stop.title}. ${stop.scene}` }) });
+      const data = await toolResponse.json();
+      if (!toolResponse.ok) throw new Error(data.error || 'The FM AI Tool could not respond.');
+      setAiResponse(data.response || 'The FM AI Tool returned an empty response.');
+      setAiUsed(true);
+    } catch (error) { setAiError(error.message); }
+    finally { setAiLoading(false); }
+  }
+
+  function useAIResponse() {
+    if (!aiResponse) return;
+    setResponse((current) => current ? `${current}\n\nFM AI Tool response:\n${aiResponse}` : `FM AI Tool response:\n${aiResponse}`);
   }
 
   function submitMove(event) {
@@ -75,19 +99,19 @@ function ShiftTrail() {
   }
 
   function continueShift() {
-    const move = scoreMove(stop, response);
+    const move = scoreMove(stop, response, aiUsed);
     const nextResults = [...results, { ...move, title: stop.title }];
     setResults(nextResults);
     setResources((current) => ({ time: Math.max(0, current.time - (move.dangerousHits ? 18 : 10)), safety: Math.max(0, current.safety - move.dangerousHits * 16), trust: Math.max(0, Math.min(100, current.trust + (move.score >= 75 ? 6 : -4))), skill: Math.min(100, current.skill + (move.helpfulHits >= 3 ? 15 : 7)) }));
-    if (stopIndex < stops.length - 1) { setStopIndex(stopIndex + 1); setResponse(''); setSubmitted(false); }
+    if (stopIndex < stops.length - 1) { setStopIndex(stopIndex + 1); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); }
     else { const finalScore = nextResults.reduce((sum, item) => sum + item.score, 0); if (!bestScore || finalScore > bestScore) { setBestScore(finalScore); window.localStorage.setItem('facilities-ai-field-lab-trail-best', String(finalScore)); } }
   }
 
-  function restart() { setStopIndex(0); setResponse(''); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, trust: 60, skill: 0 }); }
+  function restart() { setStopIndex(0); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, trust: 60, skill: 0 }); }
 
   if (finished) return <section className="trailScreen"><div className="trailHeader"><div><span className="eyebrow">THE SHIFT TRAIL · END OF DAY</span><h1>Shift report</h1><p>You learned by making the calls, checking the results, and seeing what happened to the crew.</p></div></div><div className="trailReport"><span className="gameBadge">ROUTE COMPLETE</span><h2>{resources.safety >= 75 && resources.trust >= 60 ? 'You brought the crew home strong.' : 'The route exposed some habits to improve.'}</h2><div className="trailStats"><span><b>{totalScore}</b> decision points</span><span><b>{resources.safety}</b> safety</span><span><b>{resources.trust}</b> crew trust</span><span><b>{resources.skill}</b> AI skill</span></div><div className="reportList">{results.map((item) => <div key={item.title}><b>{item.title}</b><span>{item.score}/100 · {item.summary}</span></div>)}</div><button className="primaryCta" onClick={restart}>Run the route again <span>↻</span></button></div></section>;
 
-  return <section className="trailScreen"><div className="trailHeader"><div><span className="eyebrow">FACILITIES AI FIELD LAB · THE SHIFT TRAIL</span><h1>The Shift Trail</h1><p>Run the workday. Learn the tool. Protect the crew.</p></div><div className="trailRule"><b>How to play</b><span>Read the call. Use the lesson. Type your move. Live with the consequence.</span></div></div><div className="trailMeters"><div><span>TIME</span><strong>{resources.time}%</strong><i><em style={{ width: `${resources.time}%` }} /></i></div><div><span>SAFETY</span><strong>{resources.safety}%</strong><i><em style={{ width: `${resources.safety}%` }} /></i></div><div><span>CREW TRUST</span><strong>{resources.trust}%</strong><i><em style={{ width: `${resources.trust}%` }} /></i></div><div><span>AI SKILL</span><strong>{resources.skill}%</strong><i><em style={{ width: `${resources.skill}%` }} /></i></div></div><div className="trailMap">{stops.map((item, index) => <div key={item.name} className={`trailStop ${index === stopIndex ? 'current' : ''} ${index < stopIndex ? 'passed' : ''}`}><span>{index < stopIndex ? '✓' : index + 1}</span><b>{item.name}</b></div>)}</div><div className="trailWork"><aside className="lessonPanel"><span className="eyebrow">AI LESSON {stopIndex + 1}</span><h2>{stop.title}</h2><p>{stop.lesson}</p><div className="lessonHint"><b>Field hint</b><span>{stop.hint}</span></div></aside><main className="callPanel"><div className="callMeta"><span>{stop.trade}</span><span>STOP {stopIndex + 1} OF {stops.length}</span></div><h2>{stop.name}</h2><div className="incoming"><span>JOB CALL</span><p>{stop.scene}</p></div>{!submitted ? <form className="moveForm" onSubmit={submitMove}><label htmlFor="move">{stopIndex === 0 ? 'Build your first AI-assisted move.' : 'What do you do next?'}</label><div className="starterRow">{stop.quick.map((item) => <button type="button" key={item} onClick={() => useStarter(item)}>{item}</button>)}</div><textarea id="move" value={response} onChange={(event) => setResponse(event.target.value)} placeholder="Type what you would actually do…" rows={9} /><div className="moveFooter"><small>Include the action, how AI fits, what you will check, and who owns the decision.</small><button className="primaryCta" disabled={!response.trim()}>Send the move <span>→</span></button></div></form> : <div className={`moveResult ${result.safe && result.score >= 75 ? 'good' : result.safe ? 'warn' : 'bad'}`}><span className="outcomeBadge">{result.safe && result.score >= 75 ? 'CREW CAN WORK WITH THIS' : result.safe ? 'COACHING NEEDED' : 'STOP CONDITION HIT'}</span><h2>{result.summary}</h2><p><b>Your move:</b> {response}</p><p>{result.dangerousHits ? 'The move contains a shortcut or unsupported action. The crew pauses until it is corrected.' : 'You made the human check visible. The lesson is now part of your route knowledge.'}</p><div className="outcomePoints">{result.score}/100</div><button className="primaryCta" onClick={continueShift}>{stopIndex === stops.length - 1 ? 'See the shift report' : 'Continue down the route'} <span>→</span></button></div>}</main></div></section>;
+  return <section className="trailScreen"><div className="trailHeader"><div><span className="eyebrow">FACILITIES AI FIELD LAB · THE SHIFT TRAIL</span><h1>The Shift Trail</h1><p>Run the workday. Learn the tool. Protect the crew.</p></div><div className="trailRule"><b>How to play</b><span>Read the call. Ask FM AI Tool. Check the response. Type your move. Live with the consequence.</span></div></div><div className="trailMeters"><div><span>TIME</span><strong>{resources.time}%</strong><i><em style={{ width: `${resources.time}%` }} /></i></div><div><span>SAFETY</span><strong>{resources.safety}%</strong><i><em style={{ width: `${resources.safety}%` }} /></i></div><div><span>CREW TRUST</span><strong>{resources.trust}%</strong><i><em style={{ width: `${resources.trust}%` }} /></i></div><div><span>AI SKILL</span><strong>{resources.skill}%</strong><i><em style={{ width: `${resources.skill}%` }} /></i></div></div><div className="trailMap">{stops.map((item, index) => <div key={item.name} className={`trailStop ${index === stopIndex ? 'current' : ''} ${index < stopIndex ? 'passed' : ''}`}><span>{index < stopIndex ? '✓' : index + 1}</span><b>{item.name}</b></div>)}</div><div className="trailWork"><aside className="lessonPanel"><span className="eyebrow">AI LESSON {stopIndex + 1}</span><h2>{stop.title}</h2><p>{stop.lesson}</p><div className="lessonHint"><b>Field hint</b><span>{stop.hint}</span></div></aside><main className="callPanel"><div className="callMeta"><span>{stop.trade}</span><span>STOP {stopIndex + 1} OF {stops.length}</span></div><h2>{stop.name}</h2><div className="incoming"><span>JOB CALL</span><p>{stop.scene}</p></div>{!submitted ? <><section className="aiToolPanel"><div className="aiToolTop"><div><span className="aiToolKicker">FM AI TOOL</span><b>Use AI on this job</b></div><span className={aiUsed ? 'aiUsed' : 'aiNotUsed'}>{aiUsed ? 'RESPONSE RECEIVED' : 'NOT USED YET'}</span></div><p>Write a prompt, send it to the AI, then decide what is useful and what must be checked.</p><div className="starterRow">{stop.quick.map((item) => <button type="button" key={item} onClick={() => useStarter(item)}>{item}</button>)}</div><form className="aiPromptForm" onSubmit={askTool}><textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Ask FM AI Tool to help with one part of this job…" rows={4} /><button className="primaryCta" disabled={!aiPrompt.trim() || aiLoading}>{aiLoading ? 'FM AI Tool is thinking…' : 'Ask FM AI Tool'} <span>→</span></button></form>{aiError && <div className="aiToolError">{aiError}</div>}{aiResponse && <div className="aiResponse"><div><span>FM AI TOOL RESPONSE</span><button type="button" onClick={useAIResponse}>Use in my move</button></div><p>{aiResponse}</p></div>}</section><form className="moveForm" onSubmit={submitMove}><label htmlFor="move">{stopIndex === 0 ? 'Now make your move.' : 'What do you do next?'}</label><textarea id="move" value={response} onChange={(event) => setResponse(event.target.value)} placeholder="Type what you would actually do after checking the AI response…" rows={8} /><div className="moveFooter"><small>{aiUsed ? 'Good: you consulted the tool. Include what you accepted, changed, and will verify.' : 'Ask FM AI Tool first for the full learning experience.'}</small><button className="primaryCta" disabled={!response.trim()}>Send the move <span>→</span></button></div></form></> : <div className={`moveResult ${result.safe && result.score >= 75 ? 'good' : result.safe ? 'warn' : 'bad'}`}><span className="outcomeBadge">{result.safe && result.score >= 75 ? 'CREW CAN WORK WITH THIS' : result.safe ? 'COACHING NEEDED' : 'STOP CONDITION HIT'}</span><h2>{result.summary}</h2><p><b>Your move:</b> {response}</p><p>{result.dangerousHits ? 'The move contains a shortcut or unsupported action. The crew pauses until it is corrected.' : aiUsed ? 'You used the FM AI Tool, then made the human check visible. That is the habit this route is building.' : 'You made the human check visible. Use the FM AI Tool next round to strengthen the workflow.'}</p><div className="outcomePoints">{result.score}/100</div><button className="primaryCta" onClick={continueShift}>{stopIndex === stops.length - 1 ? 'See the shift report' : 'Continue down the route'} <span>→</span></button></div>}</main></div></section>;
 }
 
 export default function Home() {
