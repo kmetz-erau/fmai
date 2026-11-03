@@ -12,7 +12,7 @@ export async function POST(request) {
     }
 
     const baseUrl = (process.env.OLLAMA_BASE_URL || '').replace(/\/$/, '');
-    const model = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+    const model = process.env.OLLAMA_MODEL || 'gemma4:31b';
     if (!baseUrl) return NextResponse.json({ error: 'OLLAMA_BASE_URL is not configured.' }, { status: 500 });
 
     const response = await fetch(`${baseUrl}/api/generate`, {

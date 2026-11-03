@@ -27,12 +27,12 @@ Use these Vercel settings:
 - Output Directory: `.next`
 - Root Directory: the folder containing `package.json`
 
-The game runs without an AI connection so it can be deployed reliably as a static-style Next.js game. The scoring is local and intentionally checks for practical habits rather than trade-specific technical knowledge.
+The game is configured for Ollama Cloud by default. The scoring is local and intentionally checks for practical habits rather than trade-specific technical knowledge.
 
 ## Ollama configuration
 
 The browser calls the included `/api/ollama` server route. Add these environment variables in Vercel under Project Settings → Environment Variables:
 
-- `OLLAMA_BASE_URL`: the HTTPS URL of a remotely reachable Ollama-compatible endpoint; do not use `localhost` on Vercel.
-- `OLLAMA_MODEL`: the installed model name, such as `llama3.1:8b`.
-- `OLLAMA_API_KEY`: optional bearer token if the endpoint requires one.
+- `OLLAMA_BASE_URL`: `https://ollama.com` for direct Ollama Cloud requests.
+- `OLLAMA_MODEL`: `gemma4:31b`, or another model returned by Ollama Cloud’s model list.
+- `OLLAMA_API_KEY`: required bearer token from your Ollama account.

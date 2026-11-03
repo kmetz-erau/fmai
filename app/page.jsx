@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 const stops = [
-  { name: 'Shop Yard', trade: 'START HERE', title: 'Meet your new helper', scene: 'Before the trucks leave, your supervisor hands you a messy note about a repair. You have ten minutes to turn it into something useful for the next person.', lesson: 'A good AI request works like a good work order: give it context, say who will read the result, ask for one specific job, choose a format, and tell it what to flag.', hint: 'Try to include: who you are, what is happening, who needs the result, the format you want, and “do not invent missing facts.”', quick: ['Build a first prompt', 'Ask for a checklist', 'Show me the CRAFT pattern'] },
+  { name: 'Shop Yard', trade: 'START HERE', title: 'Turn a real work note into a useful prompt', scene: 'The note on the dispatch board says: “RTU-3, Science 214, not cooling. Fan runs. Room was 78°F at 8:05. Class starts at 9:00. Call Jordan at extension 4421 after checking the unit.” You have ten minutes before the trucks leave. Your job is to prepare the next field step—not diagnose the equipment from the note.', lesson: 'AI works best when the request gives it a real situation, a reader, one useful task, a format, and a boundary. The note gives you enough to start, but not enough to claim a cause or choose a repair.', hint: 'Build your prompt from five pieces: Context (the work note), Reader (the technician or supervisor), Ask (prepare the next field step), Format (a short checklist), and Truth-check (use only these facts; flag what must be checked in the field).', quick: ['Build a first prompt', 'Ask for a checklist', 'Show me the CRAFT pattern'] },
   { name: 'Classroom 204', trade: 'BAS / CONTROLS', title: 'The warm-room call', scene: 'Conference Room 204 is 76°F with a 72°F setpoint. The BAS shows a 100% damper command, but nobody has confirmed physical airflow. The first class starts in 25 minutes.', lesson: 'AI can help prepare field questions and organize evidence. It cannot turn a screen command into a confirmed physical condition.', hint: 'Ask for the next checks, not a replacement part. Keep the observation, the guess, and the human check separate.', quick: ['Plan the field check', 'Separate fact from guess', 'Prepare questions for the occupant'] },
   { name: 'Parts Counter', trade: 'FLEET / EQUIPMENT', title: 'The missing model number', scene: 'A dump truck shows E-47. The operator says it still starts, but the photo does not show the make, model, or engine hours. The route leaves in 40 minutes.', lesson: 'AI is useful for finding missing information and preparing vendor questions. It is not a substitute for the OEM manual or a mechanic.', hint: 'Give AI the context it needs. Ask it to mark what is missing instead of guessing what the code means.', quick: ['Build an intake checklist', 'Prepare vendor questions', 'Check the source'] },
   { name: 'Treatment Plant', trade: 'WATER / WASTEWATER', title: 'The red-line decision', scene: 'A coworker asks AI what chlorine feed setting to use after a treated-water reading changes. The current SOP and operator-in-charge are available.', lesson: 'Some decisions are not delegated. AI may help prepare questions, but the SOP and qualified operator control the action.', hint: 'When the stakes are high, stop the AI workflow at preparation. Name the source and person who must decide.', quick: ['Find the stop condition', 'Prepare questions for the operator', 'Check the SOP boundary'] },
@@ -37,7 +37,7 @@ const starterPatterns = {
 
 const tradeProfiles = {
   hvac: { name: 'HVAC / BAS', short: 'Comfort calls, controls, and equipment records', icon: '❄', color: '#2d83b8', scenes: [
-    'Before the trucks leave, your supervisor hands you a messy note about a rooftop unit repair. Use AI to turn it into a useful intake and field-check plan for the next person.',
+    'The note on the dispatch board says: “RTU-3, Science 214, not cooling. Fan runs. Room was 78°F at 8:05. Class starts at 9:00. Call Jordan at extension 4421 after checking the unit.” Use AI to prepare a short field-check checklist for the HVAC technician. Do not ask AI to diagnose the cause or select a repair.',
     'Conference Room 204 is 76°F with a 72°F setpoint. The BAS shows a 100% damper command, but nobody has confirmed physical airflow. The first class starts in 25 minutes.',
     'A rooftop unit shows a fault code in a screenshot. The photo does not show the make, model, serial number, or last service date. A vendor call is available in 40 minutes.',
     'A coworker asks AI which heating or cooling setting to change after a comfort complaint. The approved sequence and the controls lead are available.',
@@ -46,7 +46,7 @@ const tradeProfiles = {
     'The shift is ending. Your supervisor asks which AI workflow actually helped the HVAC crew and what should become a reusable shop card.',
   ]},
   electrical: { name: 'Electrical', short: 'Service calls, documentation, and safe escalation', icon: '⚡', color: '#d28a24', scenes: [
-    'Before the crew leaves, you receive a blurry note: “breaker issue in west wing.” Use AI to turn it into a clear intake and preparation checklist without guessing the fault.',
+    'The dispatch note says: “West Wing, Room 118, breaker issue. Lights out in two offices. Occupants are still inside. Panel is in electrical closet W-1. Call Maya at extension 3178 before entering.” Use AI to prepare an intake and field-check checklist. Do not guess the fault or authorize a reset.',
     'A classroom loses power twice. A panel label and a work-order note disagree about the circuit name. Use AI to organize what is known and what a qualified electrician must verify.',
     'A motor starter photo is missing the nameplate and panel schedule reference. Use AI to prepare the information and vendor questions needed before ordering anything.',
     'Someone asks AI whether to reset a breaker that has tripped repeatedly. The site procedure and qualified electrician are available.',
@@ -55,7 +55,7 @@ const tradeProfiles = {
     'The supervisor wants a reusable AI workflow for intake, source checking, and safe escalation on future electrical calls.',
   ]},
   plumbing: { name: 'Plumbing', short: 'Leaks, fixtures, water systems, and handoffs', icon: '♒', color: '#2774b8', scenes: [
-    'A note says “leak by loading dock” but gives no fixture, room number, shutoff, or affected area. Use AI to build a practical intake and documentation plan.',
+    'The dispatch note says: “Water under sink near Loading Dock 2. Started after lunch. Floor is damp; no one knows whether the sink or wall is leaking. Keep packages clear. Call Sam at extension 2284.” Use AI to prepare a short intake and field-check checklist. Do not guess the source or tell anyone which valve to close.',
     'A restroom fixture is reported as running. The work order, occupant description, and photo use different fixture names. Use AI to separate facts from assumptions before the walk-through.',
     'A pump photo is missing the model plate and service history. Use AI to identify missing information and prepare vendor questions without selecting a replacement.',
     'Someone asks AI which valve to close after a pressure complaint. The site map and plumbing lead are available; the AI must not choose the valve.',
@@ -64,7 +64,7 @@ const tradeProfiles = {
     'The supervisor wants a reusable AI workflow for plumbing intake, comparison, and escalation that the crew can use tomorrow.',
   ]},
   carpentry: { name: 'Carpentry / General Maintenance', short: 'Building repairs, access, materials, and coordination', icon: '⌂', color: '#8f5b36', scenes: [
-    'A request says “door will not close in office area” but does not name the building, room, door, or impact. Use AI to turn it into a useful intake and visit plan.',
+    'The dispatch note says: “Door will not latch at Student Services, Room 104. Staff say it has been rubbing since yesterday. Door must stay usable during business hours. Photograph the hinge side and call Lee at extension 3912.” Use AI to prepare a short site-visit checklist. Do not ask AI to specify a repair before the door is observed.',
     'A classroom door is reported as sticking. The occupant, work order, and photo describe different door locations. Use AI to organize facts and missing details.',
     'A cabinet hinge or closer photo is missing the part label and dimensions. Use AI to prepare the measurements and vendor questions before buying a part.',
     'Someone asks AI whether a door can be altered immediately because it is rubbing. The building supervisor and approved access requirements control the decision.',
@@ -73,7 +73,7 @@ const tradeProfiles = {
     'The supervisor wants a reusable AI workflow for clear intake, material research, and safe handoffs on building repair calls.',
   ]},
   grounds: { name: 'Grounds / Roads', short: 'Outdoor work, locations, weather, and crew briefings', icon: '✦', color: '#3d8b58', scenes: [
-    'Before the crew leaves, a note lists “tree issue by north lot” with no exact location, access need, or public impact. Use AI to prepare a clear field brief.',
+    'The dispatch note says: “Low branch over walkway between North Lot and Building C. Caller reports it is about head height after the storm. Exact tree number is unknown. Keep pedestrians moving safely and call Pat at extension 2650 before closing any path.” Use AI to prepare a short site-check and crew-briefing checklist. Do not ask AI to decide whether the path should close.',
     'A walkway complaint includes a photo but no campus location. The map pin, work order, and caller description do not line up.',
     'A vehicle or equipment photo is missing the unit number and service history. Use AI to prepare an intake checklist and vendor questions without guessing the repair.',
     'Someone asks AI whether the crew should close a path because of a hazard. The site procedure and supervisor control that decision.',
@@ -129,7 +129,9 @@ function ShiftTrail() {
   }, []);
 
   function useStarter(label) {
-    setAiPrompt((current) => current ? `${current}\n\n${starterPatterns[label]}` : starterPatterns[label]);
+    const firstPrompt = `Context: ${stop.scene}\nReader: The ${profile.name} technician and supervisor.\nAsk: Turn this into a short field-preparation checklist.\nFormat: Use bullets for known facts, missing information, and the next human checks.\nTruth-check: Use only the supplied note. Do not diagnose, choose a repair, or invent a fact.`;
+    const starter = label === 'Build a first prompt' ? firstPrompt : starterPatterns[label];
+    setAiPrompt((current) => current ? `${current}\n\n${starter}` : starter);
   }
 
   async function askTool(event) {
