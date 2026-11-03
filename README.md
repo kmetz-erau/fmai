@@ -1,6 +1,6 @@
-# Facilities AI Field Lab: The Shift Trail
+# Facilities AI Field Lab: FM Journey
 
-An open-ended Oregon-Trail-style browser game that teaches practical AI habits for facilities and public-works crews.
+An open-ended journey-style browser game that teaches practical AI habits for facilities and public-works crews.
 
 ## How to play
 

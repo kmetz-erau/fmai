@@ -83,8 +83,22 @@ const tradeProfiles = {
   ]},
 };
 
-function RouteGraphic({ profile }) {
+function LegacyRouteGraphic({ profile }) {
   return <div className="routeGraphic" style={{ '--trade-color': profile.color }}><svg viewBox="0 0 620 220" role="img" aria-label={`${profile.name} route illustration`}><rect width="620" height="220" rx="18" fill="#082238" /><path d="M0 166 C120 112 190 190 300 135 S485 76 620 116" fill="none" stroke="#f2b134" strokeWidth="6" strokeDasharray="11 12" /><path d="M0 178 C120 124 190 202 300 147 S485 88 620 128" fill="none" stroke="#d9e8ef" strokeWidth="2" opacity=".4" /><circle cx="78" cy="137" r="15" fill="#f2b134" /><circle cx="284" cy="142" r="15" fill="#fff" /><circle cx="514" cy="103" r="15" fill="#fff" /><path d="M63 136h-27M93 136h27M78 122v-18" stroke="#f2b134" strokeWidth="4" strokeLinecap="round" /><path d="M270 142h-25M299 142h25M284 127v-22" stroke={profile.color} strokeWidth="4" strokeLinecap="round" /><path d="M500 103h-26M529 103h26M514 88V67" stroke="#3d8b58" strokeWidth="4" strokeLinecap="round" /><path d="M70 168h-7l-5 14h40l-5-14h-7M270 173h28v12h-28zM500 134l14-26 14 26z" fill="none" stroke="#d9e8ef" strokeWidth="3" /><text x="25" y="42" fill="#f2b134" fontFamily="Arial" fontSize="13" fontWeight="700" letterSpacing="2">THE SHIFT TRAIL</text><text x="25" y="66" fill="#fff" fontFamily="Arial" fontSize="25" fontWeight="700">{profile.name}</text><text x="25" y="91" fill="#bcd0dc" fontFamily="Arial" fontSize="13">Learn AI by making the calls.</text></svg><div className="routeGraphicBadge"><span>{profile.icon}</span><b>{profile.short}</b></div></div>;
+}
+
+function RouteGraphic({ profile }) {
+  return <div className="routeGraphic" style={{ '--trade-color': profile.color }}>
+    <svg viewBox="0 0 620 220" role="img" aria-label={`${profile.name} FM Journey illustration`}>
+      <rect width="620" height="220" rx="18" fill="#082238" />
+      <path d="M0 166 C120 112 190 190 300 135 S485 76 620 116" fill="none" stroke="#f2b134" strokeWidth="6" strokeDasharray="11 12" />
+      <path d="M0 178 C120 124 190 202 300 147 S485 88 620 128" fill="none" stroke="#d9e8ef" strokeWidth="2" opacity=".4" />
+      <circle cx="78" cy="137" r="15" fill="#f2b134" /><circle cx="284" cy="142" r="15" fill="#fff" /><circle cx="514" cy="103" r="15" fill="#fff" />
+      <path d="M63 136h-27M93 136h27M78 122v-18" stroke="#f2b134" strokeWidth="4" strokeLinecap="round" /><path d="M270 142h-25M299 142h25M284 127v-22" stroke={profile.color} strokeWidth="4" strokeLinecap="round" /><path d="M500 103h-26M529 103h26M514 88V67" stroke="#3d8b58" strokeWidth="4" strokeLinecap="round" />
+      <path d="M70 168h-7l-5 14h40l-5-14h-7M270 173h28v12h-28zM500 134l14-26 14 26z" fill="none" stroke="#d9e8ef" strokeWidth="3" />
+      <text x="25" y="42" fill="#f2b134" fontFamily="Arial" fontSize="13" fontWeight="700" letterSpacing="2">FM JOURNEY</text><text x="25" y="66" fill="#fff" fontFamily="Arial" fontSize="25" fontWeight="700">{profile.name}</text><text x="25" y="91" fill="#bcd0dc" fontFamily="Arial" fontSize="13">Learn AI by making the calls.</text>
+    </svg><div className="routeGraphicBadge"><span>{profile.icon}</span><b>{profile.short}</b></div>
+  </div>;
 }
 
 function scoreMove(stop, response, usedAI = false) {
@@ -102,7 +116,7 @@ function TradePicker({ onChoose }) {
   return <section className="tradePicker"><div className="pickerCopy"><span className="eyebrow">THE SHIFT TRAIL · CHOOSE YOUR ROUTE</span><h1>Pick your trade.</h1><p>The work calls will change with your choice. You will practice the same AI habits—clear prompts, useful checks, safe boundaries—but on situations that feel like your day.</p></div><div className="pickerGraphic"><RouteGraphic profile={tradeProfiles.hvac} /></div><div className="tradeCards">{Object.entries(tradeProfiles).map(([key, profile]) => <button type="button" className="tradeCard" key={key} onClick={() => onChoose(key)} style={{ '--trade-color': profile.color }}><span className="tradeIcon">{profile.icon}</span><span><b>{profile.name}</b><small>{profile.short}</small></span><strong>Start route →</strong></button>)}</div></section>;
 }
 
-function ShiftTrail() {
+function FMJourney() {
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [stopIndex, setStopIndex] = useState(0);
   const [response, setResponse] = useState('');
@@ -124,7 +138,7 @@ function ShiftTrail() {
   const routePercent = Math.round((stopIndex / (stops.length - 1)) * 100);
 
   useEffect(() => {
-    const saved = Number(window.localStorage.getItem('facilities-ai-field-lab-trail-best'));
+    const saved = Number(window.localStorage.getItem('facilities-ai-field-lab-fm-journey-best'));
     if (saved) setBestScore(saved);
   }, []);
 
@@ -165,7 +179,7 @@ function ShiftTrail() {
     setResults(nextResults);
     setResources((current) => ({ time: Math.max(0, current.time - (move.dangerousHits ? 18 : 10)), safety: Math.max(0, current.safety - move.dangerousHits * 16), trust: Math.max(0, Math.min(100, current.trust + (move.score >= 75 ? 6 : -4))), skill: Math.min(100, current.skill + (move.helpfulHits >= 3 ? 15 : 7)) }));
     if (stopIndex < stops.length - 1) { setStopIndex(stopIndex + 1); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); }
-    else { const finalScore = nextResults.reduce((sum, item) => sum + item.score, 0); if (!bestScore || finalScore > bestScore) { setBestScore(finalScore); window.localStorage.setItem('facilities-ai-field-lab-trail-best', String(finalScore)); } }
+    else { const finalScore = nextResults.reduce((sum, item) => sum + item.score, 0); if (!bestScore || finalScore > bestScore) { setBestScore(finalScore); window.localStorage.setItem('facilities-ai-field-lab-fm-journey-best', String(finalScore)); } }
   }
 
   function restart() { setStopIndex(0); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, trust: 60, skill: 0 }); }
@@ -180,5 +194,5 @@ function ShiftTrail() {
 }
 
 export default function Home() {
-  return <><header className="topbar"><div className="homeBrand"><span className="homeMark" aria-hidden="true"><span className="homeGlyph" /></span><span className="brand">FACILITIES <span>AI</span> FIELD LAB</span></div><div className="topmeta">THE SHIFT TRAIL<br />OPEN-ENDED AI GAME</div></header><main className="shell"><ShiftTrail /></main></>;
+  return <><header className="topbar"><div className="homeBrand"><span className="homeMark" aria-hidden="true"><span className="homeGlyph" /></span><span className="brand">FACILITIES <span>AI</span> FIELD LAB</span></div><div className="topmeta">FM JOURNEY<br />OPEN-ENDED AI GAME</div></header><main className="shell"><FMJourney /></main></>;
 }
