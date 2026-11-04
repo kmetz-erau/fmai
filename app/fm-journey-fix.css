@@ -13,3 +13,7 @@
 .incoming p{white-space:pre-line}
 .incoming span{font-size:0}
 .incoming span:after{content:'WORK ORDER';font-size:10px}
+.trailMeters>div:nth-child(3)>span{font-size:0}
+.trailMeters>div:nth-child(3)>span:after{content:'WORK QUALITY';font-size:10px}
+.trailStats>span:nth-child(3){font-size:0}
+.trailStats>span:nth-child(3):after{content:'work quality';font-size:13px}

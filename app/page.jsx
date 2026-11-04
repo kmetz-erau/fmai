@@ -93,6 +93,16 @@ const workOrderStages = [
   { priority: 'P3 · Process improvement', requester: 'Trade supervisor', timing: 'End of workday', assignment: 'Turn the useful workflow into a reusable shop card with a human owner and stop condition.' },
 ];
 
+const personalEvents = [
+  'FIELD UPDATE: Dispatch has only one photo. Do not fill the gap with a guess.',
+  'FIELD UPDATE: The occupant wants a fast answer. Keep the verification step visible.',
+  'FIELD UPDATE: The vendor asks for the model and serial number before discussing parts.',
+  'FIELD UPDATE: A coworker asks for a yes-or-no decision that belongs to a qualified person.',
+  'FIELD UPDATE: Two records use different names for the same location. Compare before moving.',
+  'FIELD UPDATE: The hazard is near an occupied area. Protect the area before gathering more detail.',
+  'FIELD UPDATE: Save the useful prompt and check as a personal shop card for next time.',
+];
+
 const tradeStopContent = {
   hvac: [
     { name: 'Shop Yard', title: 'Build an HVAC prompt from the dispatch note', lesson: 'Give AI the unit, room, observed condition, timing, reader, and one useful task. Ask for field preparation—not a diagnosis.', hint: 'Use the note to ask for known facts, missing information, and a short technician checklist.', quick: ['Build the HVAC prompt', 'Make a field checklist', 'Find missing equipment details'] },
@@ -144,7 +154,7 @@ const tradeStopContent = {
 function formatWorkOrder(profile, index, scenario) {
   const stage = workOrderStages[index];
   const number = `FM-${profile.name.replace(/[^A-Z]/gi, '').slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, '0')}`;
-  return `WO ${number}\nTRADE: ${profile.name}\nPRIORITY: ${stage.priority}\nSTATUS: OPEN · AI PREPARATION REQUESTED\nREQUESTER: ${stage.requester}\nTIMING: ${stage.timing}\n\nREQUEST DETAILS\n${scenario}\n\nAI ASSIGNMENT\n${stage.assignment}`;
+  return `WO ${number}\nTRADE: ${profile.name}\nPRIORITY: ${stage.priority}\nSTATUS: OPEN · AI PREPARATION REQUESTED\nREQUESTER: ${stage.requester}\nTIMING: ${stage.timing}\n\nREQUEST DETAILS\n${scenario}\n\n${personalEvents[index]}\n\nAI ASSIGNMENT\n${stage.assignment}`;
 }
 
 function LegacyRouteGraphic({ profile }) {
@@ -173,7 +183,7 @@ function scoreMove(stop, response, usedAI = false) {
   const dangerousHits = dangerous.filter((word) => text.includes(word)).length;
   const action = /i would|first|next|send|ask|write|stop|notify|compare|use/.test(text);
   const score = Math.max(0, Math.min(100, 30 + helpfulHits * 8 + (action ? 12 : 0) + (usedAI ? 8 : 0) - dangerousHits * 17));
-  return { score, safe: dangerousHits === 0 || text.includes('do not'), helpfulHits, dangerousHits, usedAI, summary: score >= 75 && dangerousHits === 0 ? 'The crew can work with this move.' : score >= 55 ? 'This move has a useful start, but it needs a clearer check.' : 'This move needs review before anyone acts.' };
+  return { score, safe: dangerousHits === 0 || text.includes('do not'), helpfulHits, dangerousHits, usedAI, summary: score >= 75 && dangerousHits === 0 ? 'This is a usable work move.' : score >= 55 ? 'This move has a useful start, but it needs a clearer check.' : 'This move needs review before anyone acts.' };
 }
 
 function TradePicker({ onChoose }) {
@@ -191,7 +201,7 @@ function FMJourney() {
   const [aiUsed, setAiUsed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState([]);
-  const [resources, setResources] = useState({ time: 100, safety: 100, trust: 60, skill: 0 });
+  const [resources, setResources] = useState({ time: 100, safety: 100, quality: 60, trust: 60, rework: 100, skill: 0 });
   const [bestScore, setBestScore] = useState(null);
   const profile = tradeProfiles[selectedTrade || 'hvac'];
   const activeContent = tradeStopContent[selectedTrade || 'hvac'];
@@ -242,14 +252,14 @@ function FMJourney() {
     const move = scoreMove(stop, response, aiUsed);
     const nextResults = [...results, { ...move, title: stop.title }];
     setResults(nextResults);
-    setResources((current) => ({ time: Math.max(0, current.time - (move.dangerousHits ? 18 : 10)), safety: Math.max(0, current.safety - move.dangerousHits * 16), trust: Math.max(0, Math.min(100, current.trust + (move.score >= 75 ? 6 : -4))), skill: Math.min(100, current.skill + (move.helpfulHits >= 3 ? 15 : 7)) }));
+    setResources((current) => { const nextQuality = Math.max(0, Math.min(100, current.quality + (move.score >= 75 ? 8 : -5))); return { time: Math.max(0, current.time - (move.dangerousHits ? 18 : 10)), safety: Math.max(0, current.safety - move.dangerousHits * 16), quality: nextQuality, trust: nextQuality, rework: Math.max(0, current.rework - (move.dangerousHits ? 18 : move.score >= 75 ? 0 : 7)), skill: Math.min(100, current.skill + (move.helpfulHits >= 3 ? 15 : 7)) }; });
     if (stopIndex < stops.length - 1) { setStopIndex(stopIndex + 1); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); }
     else { const finalScore = nextResults.reduce((sum, item) => sum + item.score, 0); if (!bestScore || finalScore > bestScore) { setBestScore(finalScore); window.localStorage.setItem('facilities-ai-field-lab-fm-journey-best', String(finalScore)); } }
   }
 
-  function restart() { setStopIndex(0); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, trust: 60, skill: 0 }); }
+  function restart() { setStopIndex(0); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, quality: 60, trust: 60, rework: 100, skill: 0 }); }
 
-  function chooseTrade(key) { setSelectedTrade(key); setStopIndex(0); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, trust: 60, skill: 0 }); }
+  function chooseTrade(key) { setSelectedTrade(key); setStopIndex(0); setResponse(''); setAiPrompt(''); setAiResponse(''); setAiError(''); setAiUsed(false); setSubmitted(false); setResults([]); setResources({ time: 100, safety: 100, quality: 60, trust: 60, rework: 100, skill: 0 }); }
 
   if (!selectedTrade) return <TradePicker onChoose={chooseTrade} />;
 
