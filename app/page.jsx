@@ -217,6 +217,21 @@ function FMJourney() {
     if (saved) setBestScore(saved);
   }, []);
 
+  useEffect(() => {
+    const incoming = document.querySelector('.incoming');
+    if (!incoming || !stop.scene.toLowerCase().includes('photo')) return undefined;
+    const positions = { hvac: '0% 0%', electrical: '50% 0%', plumbing: '100% 0%', carpentry: '0% 100%', grounds: '100% 100%' };
+    const figure = document.createElement('figure');
+    figure.className = 'evidencePhoto';
+    figure.style.backgroundImage = "url('/evidence-photo-sheet.png')";
+    figure.style.backgroundPosition = positions[selectedTrade] || '0% 0%';
+    const caption = document.createElement('figcaption');
+    caption.textContent = `PHOTO EVIDENCE · ${profile.name}`;
+    figure.appendChild(caption);
+    incoming.appendChild(figure);
+    return () => figure.remove();
+  }, [selectedTrade, stopIndex, profile.name, stop.scene]);
+
   function useStarter(label) {
     const firstPrompt = `Context: ${stop.scene}\nReader: The ${profile.name} technician and supervisor.\nAsk: Turn this into a short field-preparation checklist.\nFormat: Use bullets for known facts, missing information, and the next human checks.\nTruth-check: Use only the supplied note. Do not diagnose, choose a repair, or invent a fact.`;
     const starter = label === 'Build a first prompt' ? firstPrompt : starterPatterns[label];
